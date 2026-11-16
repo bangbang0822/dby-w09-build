@@ -149,7 +149,6 @@ jobs:
       # checkout is on, whether that checkout is clean, what the patch files hash to, and what git
       # itself answers for the two patches the bridge applies first.
       - name: bridge patch state
-        working-directory: device
         run: |
           set +e
           T=UniXNU/out/dby-w09/*/*/tree
