@@ -130,6 +130,11 @@ kind = "source"
 reference = "package/HidInputProbe.cpp"
 result = "2026-11-17 00:30, the third shape of the HID match fix, and the one that answers the review: a kernel thread started beside the offline device asks every two seconds whether an IOHIDEventDriver sits below it, re-registers when the answer is no (kIOServiceAsynchronous, never the synchronous form, whose doServiceMatch/startMatching loops have no deadline), accepts the component's own verdict native_hid_input_results[3] > 0 as well as the registry walk, stops after five tries and prints one closing row because eleven kprintfs in twenty seconds from a background thread is the burst that has stalled this board. The device is pinned for the boot by the reference the success path never releases, which is why the thread may hold the raw pointer. Not yet seen on hardware: the boot that prints 'the re-registration attached an event driver' and then sends touch reports is the measurement."
 
+[[area.evidence]]
+kind = "source"
+reference = "package/HidInputProbe.cpp"
+result = "2026-11-17 00:35, the first boot of the boot-time match retry: the console says 'HidInputProbe: event driver attached after 2 s', the owner's upward swipe opened the home screen - so touch worked, which is the first acceptance of a gesture since the HID path started failing - and then a page of the boot diagnostics flashed over the UI and the machine reset into fastboot. Both touch and the keys stopped together, which is one device: they share NativeHidInput's single IOHIDDevice. Not diagnosed: nothing was capturing at that moment, so whether this is a panic, a SpringBoard crash that the boot page redrew over, or the asynchronous re-registration landing a second driver is unknown. Next boot with a console attached and the same swipe is what names it; the payload with the retry is matchthread2.img (cfb58435) and the tablet is back on the known-good sinkrow build (8cd9329f)."
+
 [[area]]
 id = "cpu"
 status = "implemented"
