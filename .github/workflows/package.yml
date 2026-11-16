@@ -86,6 +86,9 @@ jobs:
           # The Metal bridge is a Rust static library and build-adreno-metal-bridge.py asks for the
           # pinned toolchain by name (`cargo +1.98.0`), which the image's default Rust does not have.
           rustup toolchain install 1.98.0 --profile minimal --component rust-src
+          # The bridge cross-builds for the board's iOS target; a fresh toolchain only carries the
+          # host's, and without this the build stops at "can't find crate for core" inside typenum.
+          rustup target add --toolchain 1.98.0 aarch64-apple-ios
           llvm_prefix=$(brew --prefix llvm)
           bison_prefix=$(brew --prefix bison)
           {
@@ -173,6 +176,8 @@ jobs:
           [ -n "$SRC" ] && git -C "$SRC" status --short | head -5
           [ -n "$PAT" ] && sha256sum "$PAT"/0002-*.patch "$PAT"/0004-*.patch "$PAT"/0040-*.patch 2>/dev/null
           if [ -n "$SRC" ] && [ -n "$PAT" ]; then
+            PAT=$(cd "$PAT" && pwd)
+            SRC=$(cd "$SRC" && pwd)
             IDX=$(mktemp)
             for p in "$PAT"/0002-*.patch "$PAT"/0004-*.patch; do
               GIT_INDEX_FILE=$IDX git -C "$SRC" read-tree HEAD
