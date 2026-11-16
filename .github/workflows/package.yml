@@ -144,11 +144,24 @@ jobs:
       # seed on the runner and rewrites CONFIG_XNU_OWNER_DATA_VOLUME_UUID before the kernel compiles,
       # so the images belong to that seed. The seed is cached at the end of the run, so later runs do
       # not need the input again.
+      - name: package
+        working-directory: device
+        env:
+          UNIXNU_UNIQUE_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
+          UNIXNU_UEFI: ${{ github.workspace }}/uefi-dby_w09
+          INIT_DATA: ${{ inputs.init_data }}
+        run: |
+          if [ "$INIT_DATA" = "true" ]; then
+            scripts/package.sh --os "$OS_PROFILE" --uefi ../uefi-dby_w09 --init-data
+          else
+            scripts/package.sh --os "$OS_PROFILE" --uefi ../uefi-dby_w09
+          fi
       # One run of the bridge patch that does not apply on the runner but does on a Linux clone of the
       # same pinned revisions needs the runner's own state written down: which commit the translator's
       # checkout is on, whether that checkout is clean, what the patch files hash to, and what git
       # itself answers for the two patches the bridge applies first.
       - name: bridge patch state
+        if: always()
         run: |
           set +e
           T=UniXNU/out/dby-w09/*/*/tree
@@ -174,18 +187,6 @@ jobs:
           fi
           git -C UniXNU rev-parse HEAD
           git -C UniXNU/drivers/AdrenoMetal rev-parse HEAD 2>/dev/null
-      - name: package
-        working-directory: device
-        env:
-          UNIXNU_UNIQUE_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
-          UNIXNU_UEFI: ${{ github.workspace }}/uefi-dby_w09
-          INIT_DATA: ${{ inputs.init_data }}
-        run: |
-          if [ "$INIT_DATA" = "true" ]; then
-            scripts/package.sh --os "$OS_PROFILE" --uefi ../uefi-dby_w09 --init-data
-          else
-            scripts/package.sh --os "$OS_PROFILE" --uefi ../uefi-dby_w09
-          fi
       - name: runtime log
         if: failure()
         run: |
