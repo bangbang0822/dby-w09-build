@@ -144,6 +144,37 @@ jobs:
       # seed on the runner and rewrites CONFIG_XNU_OWNER_DATA_VOLUME_UUID before the kernel compiles,
       # so the images belong to that seed. The seed is cached at the end of the run, so later runs do
       # not need the input again.
+      # One run of the bridge patch that does not apply on the runner but does on a Linux clone of the
+      # same pinned revisions needs the runner's own state written down: which commit the translator's
+      # checkout is on, whether that checkout is clean, what the patch files hash to, and what git
+      # itself answers for the two patches the bridge applies first.
+      - name: bridge patch state
+        working-directory: device
+        run: |
+          set +e
+          T=UniXNU/out/dby-w09/*/*/tree
+          SRC=$(ls -d $T/.cache/gpu-reference/metal2vulkan 2>/dev/null | head -1)
+          PAT=$(ls -d $T/drivers/AdrenoMetal/bridge/patches 2>/dev/null | head -1)
+          echo "translator: $SRC"
+          echo "patches:    $PAT"
+          [ -n "$SRC" ] && git -C "$SRC" rev-parse HEAD
+          [ -n "$SRC" ] && git -C "$SRC" status --short | head -5
+          [ -n "$PAT" ] && sha256sum "$PAT"/0002-*.patch "$PAT"/0004-*.patch "$PAT"/0040-*.patch 2>/dev/null
+          if [ -n "$SRC" ] && [ -n "$PAT" ]; then
+            IDX=$(mktemp)
+            for p in "$PAT"/0002-*.patch "$PAT"/0004-*.patch; do
+              GIT_INDEX_FILE=$IDX git -C "$SRC" read-tree HEAD
+              if GIT_INDEX_FILE=$IDX git -C "$SRC" apply --check --cached "$p" 2>&1; then
+                echo "check ok:   $(basename "$p")"
+              else
+                echo "check FAIL: $(basename "$p")"
+              fi
+              GIT_INDEX_FILE=$IDX git -C "$SRC" apply --cached "$p" 2>&1 | head -3
+            done
+            rm -f "$IDX"
+          fi
+          git -C UniXNU rev-parse HEAD
+          git -C UniXNU/drivers/AdrenoMetal rev-parse HEAD 2>/dev/null
       - name: package
         working-directory: device
         env:
